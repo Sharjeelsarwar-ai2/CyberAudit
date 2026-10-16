@@ -1,4 +1,5 @@
 from utils.groq_client import call_agent
+from utils.text_utils import condense
 
 
 def run_compliance_check(app_description: str, previous_findings: str) -> str:
@@ -35,9 +36,9 @@ Format with clear sections and use tables."""
 {app_description}
 
 --- PREVIOUS SECURITY FINDINGS ---
-{previous_findings}
+{condense(previous_findings, 5000)}
 --- END ---
 
 Provide your detailed compliance report."""
 
-    return call_agent(system_prompt, user_prompt, context=previous_findings)
+    return call_agent(system_prompt, user_prompt)
