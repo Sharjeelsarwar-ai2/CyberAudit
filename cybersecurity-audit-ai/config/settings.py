@@ -3,7 +3,32 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+
+def _clean(value) -> str:
+    """Strip whitespace/newlines and stray quotes pasted around a key."""
+    return str(value or "").strip().strip('"').strip("'").strip()
+
+
+def get_groq_key_info():
+    """Return (api_key, source). Streamlit secrets win over env / .env."""
+    try:
+        import streamlit as st
+        for name in ("GROQ_API_KEY", "groq_api_key"):
+            if name in st.secrets:
+                return _clean(st.secrets[name]), "Streamlit secrets"
+        # key nested under a section, e.g.  [groq]  GROQ_API_KEY = "..."
+        for section_name in st.secrets:
+            section = st.secrets[section_name]
+            if hasattr(section, "get"):
+                for name in ("GROQ_API_KEY", "groq_api_key", "api_key"):
+                    if section.get(name):
+                        return _clean(section[name]), f"Streamlit secrets [{section_name}]"
+    except Exception:
+        pass  # no secrets file / not running in Streamlit
+    return _clean(os.getenv("GROQ_API_KEY")), "environment / .env"
+
+
+GROQ_API_KEY = get_groq_key_info()[0]
 MODEL_NAME = "openai/gpt-oss-120b"
 MAX_TOKENS = 4096
 TEMPERATURE = 0.3
