@@ -1,4 +1,5 @@
 from fpdf import FPDF
+from utils.groq_client import is_error
 import re
 import io
 
@@ -11,7 +12,7 @@ class SecurityReportPDF(FPDF):
     def header(self):
         self.set_font("Helvetica", "B", 12)
         self.set_text_color(0, 200, 150)
-        self.cell(0, 10, "CyberAudit AI - Security Assessment Report", ln=True, align="C")
+        self.cell(0, 10, "CyberAudit AI - Security Assessment Report", new_x="LMARGIN", new_y="NEXT", align="C")
         self.set_draw_color(0, 200, 150)
         self.line(10, self.get_y(), 200, self.get_y())
         self.ln(5)
@@ -26,7 +27,7 @@ class SecurityReportPDF(FPDF):
         self.add_page()
         self.set_font("Helvetica", "B", 16)
         self.set_text_color(0, 200, 150)
-        self.cell(0, 12, title, ln=True)
+        self.cell(0, 12, title, new_x="LMARGIN", new_y="NEXT")
         self.ln(3)
         
         self.set_font("Helvetica", "", 10)
@@ -34,7 +35,7 @@ class SecurityReportPDF(FPDF):
         
         cleaned = re.sub(r'[^\x00-\x7F]+', ' ', content)
         cleaned = cleaned.replace('**', '').replace('##', '').replace('###', '').replace('#', '')
-        cleaned = cleaned.replace('`', '').replace('---', '────────────────')
+        cleaned = cleaned.replace('`', '').replace('---', '-' * 20)
         
         for line in cleaned.split('\n'):
             line = line.strip()
@@ -43,17 +44,17 @@ class SecurityReportPDF(FPDF):
                 continue
             if line.startswith('|'):
                 self.set_font("Courier", "", 8)
-                self.multi_cell(0, 5, line)
+                self.multi_cell(0, 5, line, new_x="LMARGIN", new_y="NEXT")
                 self.set_font("Helvetica", "", 10)
             elif line.startswith('- ') or line.startswith('* '):
                 self.cell(5)
-                self.multi_cell(0, 5, f"  {line}")
+                self.multi_cell(0, 5, f"  {line}", new_x="LMARGIN", new_y="NEXT")
             elif line.isupper() or line.startswith('CRITICAL') or line.startswith('HIGH'):
                 self.set_font("Helvetica", "B", 10)
-                self.multi_cell(0, 5, line)
+                self.multi_cell(0, 5, line, new_x="LMARGIN", new_y="NEXT")
                 self.set_font("Helvetica", "", 10)
             else:
-                self.multi_cell(0, 5, line)
+                self.multi_cell(0, 5, line, new_x="LMARGIN", new_y="NEXT")
 
 
 def generate_pdf(results: dict) -> bytes:
@@ -70,6 +71,8 @@ def generate_pdf(results: dict) -> bytes:
 
     for title, content in sections:
         if content:
+            if is_error(content):
+                content = "This section could not be generated because its agent failed. Re-run the audit to regenerate it."
             pdf.add_section(title, content)
 
     buffer = io.BytesIO()
