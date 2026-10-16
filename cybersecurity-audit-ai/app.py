@@ -295,7 +295,343 @@ CUSTOM_CSS = """
 
 .risk-score-circle {
     width: 180px; height: 180px; border-radius: 50%;
-    display: flex; flex-direction: 
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    position: relative; animation: scoreAppear 1s ease-out;
+}
+
+.risk-score-circle.critical {
+    background: conic-gradient(var(--accent-red) var(--score-percent), rgba(255,255,255,0.05) 0);
+    box-shadow: 0 0 40px rgba(255, 0, 64, 0.3);
+}
+.risk-score-circle.high {
+    background: conic-gradient(var(--accent-orange) var(--score-percent), rgba(255,255,255,0.05) 0);
+    box-shadow: 0 0 40px rgba(255, 107, 53, 0.3);
+}
+.risk-score-circle.medium {
+    background: conic-gradient(var(--accent-yellow) var(--score-percent), rgba(255,255,255,0.05) 0);
+    box-shadow: 0 0 40px rgba(255, 215, 0, 0.3);
+}
+.risk-score-circle.low {
+    background: conic-gradient(var(--accent-cyan) var(--score-percent), rgba(255,255,255,0.05) 0);
+    box-shadow: 0 0 40px rgba(0, 245, 212, 0.3);
+}
+
+.risk-score-inner {
+    width: 140px; height: 140px; border-radius: 50%;
+    background: var(--bg-primary);
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+}
+
+.risk-score-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 2.5rem; font-weight: 900;
+    color: var(--text-primary);
+}
+
+.risk-score-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.75rem; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 2px;
+}
+
+@keyframes scoreAppear {
+    0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.agent-running {
+    display: flex; align-items: center; gap: 12px;
+    padding: 1rem 1.5rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px; margin: 0.5rem 0;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.1rem; color: var(--text-primary);
+    backdrop-filter: blur(10px);
+}
+
+.pulse-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.5; }
+}
+
+.stat-card {
+    background: linear-gradient(145deg, rgba(17, 24, 39, 0.95), rgba(30, 41, 59, 0.7));
+    border: 1px solid var(--glass-border);
+    border-radius: 16px; padding: 1.5rem;
+    text-align: center; transition: all 0.4s ease;
+    position: relative; overflow: hidden;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--glow-cyan);
+    border-color: rgba(0, 245, 212, 0.3);
+}
+
+.stat-card .stat-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 2rem; font-weight: 900;
+    margin-bottom: 0.3rem;
+}
+
+.stat-card .stat-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 2px;
+}
+
+.stTabs [data-baseweb="tab-list"] {
+    gap: 4px;
+    background: rgba(17, 24, 39, 0.5);
+    border-radius: 12px; padding: 4px;
+}
+
+.stTabs [data-baseweb="tab"] {
+    background: transparent !important;
+    border-radius: 10px !important;
+    color: var(--text-secondary) !important;
+    font-family: 'Orbitron', monospace !important;
+    font-size: 0.7rem !important;
+    letter-spacing: 1px !important;
+    padding: 8px 16px !important;
+    transition: all 0.3s ease !important;
+}
+
+.stTabs [data-baseweb="tab"]:hover {
+    color: var(--accent-cyan) !important;
+    background: rgba(0, 245, 212, 0.05) !important;
+}
+
+.stTabs [aria-selected="true"] {
+    background: rgba(0, 245, 212, 0.1) !important;
+    color: var(--accent-cyan) !important;
+    border-bottom: 2px solid var(--accent-cyan) !important;
+}
+
+.stTabs [data-baseweb="tab-panel"] {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 0 0 12px 12px;
+    padding: 1.5rem;
+    backdrop-filter: blur(10px);
+}
+
+.stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+    font-family: 'Orbitron', monospace !important;
+    color: var(--accent-cyan) !important;
+}
+
+.stMarkdown p, .stMarkdown li {
+    color: var(--text-primary) !important;
+    font-family: 'Rajdhani', sans-serif !important;
+    font-size: 1rem !important;
+    line-height: 1.7 !important;
+}
+
+.stMarkdown code {
+    background: rgba(0, 245, 212, 0.1) !important;
+    color: var(--accent-cyan) !important;
+    padding: 2px 8px !important;
+    border-radius: 4px !important;
+    font-family: 'JetBrains Mono', monospace !important;
+}
+
+.stMarkdown th {
+    background: rgba(0, 245, 212, 0.1) !important;
+    color: var(--accent-cyan) !important;
+    font-family: 'Orbitron', monospace !important;
+    font-size: 0.75rem !important;
+    padding: 10px !important;
+    text-align: left !important;
+    border-bottom: 2px solid rgba(0, 245, 212, 0.3) !important;
+}
+
+.stMarkdown td {
+    padding: 8px 10px !important;
+    border-bottom: 1px solid var(--glass-border) !important;
+    color: var(--text-primary) !important;
+    font-family: 'Rajdhani', sans-serif !important;
+}
+
+.stMarkdown tr:hover td {
+    background: rgba(0, 245, 212, 0.03) !important;
+}
+
+.example-card {
+    background: linear-gradient(145deg, rgba(17, 24, 39, 0.9), rgba(30, 41, 59, 0.5));
+    border: 1px solid var(--glass-border);
+    border-radius: 12px; padding: 1rem 1.2rem;
+    cursor: pointer; transition: all 0.3s ease;
+    margin-bottom: 0.5rem;
+}
+
+.example-card:hover {
+    border-color: var(--accent-cyan);
+    transform: translateX(5px);
+    box-shadow: -4px 0 15px rgba(0, 245, 212, 0.1);
+}
+
+.example-card .example-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem; color: var(--accent-cyan);
+    margin-bottom: 0.3rem;
+}
+
+.example-card .example-desc {
+    font-size: 0.8rem; color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.stDownloadButton > button {
+    background: linear-gradient(135deg, var(--accent-purple), #9333ea) !important;
+    color: white !important;
+    font-family: 'Orbitron', monospace !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 0.7rem 2rem !important;
+    transition: all 0.3s ease !important;
+    width: 100% !important;
+}
+
+.stDownloadButton > button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: var(--glow-purple) !important;
+}
+
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, rgba(10, 14, 23, 0.98), rgba(17, 24, 39, 0.95)) !important;
+    border-right: 1px solid var(--glass-border) !important;
+}
+
+section[data-testid="stSidebar"] .stMarkdown h1,
+section[data-testid="stSidebar"] .stMarkdown h2,
+section[data-testid="stSidebar"] .stMarkdown h3 {
+    font-family: 'Orbitron', monospace !important;
+    color: var(--accent-cyan) !important;
+}
+
+section[data-testid="stSidebar"] .stMarkdown p,
+section[data-testid="stSidebar"] .stMarkdown li {
+    color: var(--text-secondary) !important;
+}
+
+.scanner-line {
+    width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+    animation: scan 2s ease-in-out infinite;
+    margin: 1rem 0;
+}
+
+@keyframes scan {
+    0% { transform: translateX(-100%); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: translateX(100%); opacity: 0; }
+}
+
+.stProgress > div > div > div {
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple)) !important;
+    border-radius: 10px !important;
+}
+
+.stProgress > div > div {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-radius: 10px !important;
+}
+
+.streamlit-expanderHeader {
+    background: var(--glass-bg) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 12px !important;
+    color: var(--text-primary) !important;
+    font-family: 'Rajdhani', sans-serif !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+}
+
+.streamlit-expanderHeader:hover {
+    border-color: rgba(0, 245, 212, 0.3) !important;
+    color: var(--accent-cyan) !important;
+}
+
+.cyber-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), var(--accent-purple), transparent);
+    margin: 2rem 0; border: none;
+}
+
+.cyber-footer {
+    text-align: center; padding: 2rem 0;
+    margin-top: 3rem;
+    border-top: 1px solid var(--glass-border);
+}
+
+.cyber-footer p {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem; color: var(--text-secondary);
+    letter-spacing: 1px;
+}
+
+.cyber-footer .tech-stack {
+    display: flex; justify-content: center;
+    gap: 1rem; margin-top: 0.5rem; flex-wrap: wrap;
+}
+
+.cyber-footer .tech-badge {
+    background: rgba(0, 245, 212, 0.05);
+    border: 1px solid rgba(0, 245, 212, 0.15);
+    border-radius: 20px; padding: 4px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; color: var(--accent-cyan);
+}
+
+.stAlert {
+    background: var(--glass-bg) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 12px !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+.stSpinner > div {
+    border-top-color: var(--accent-cyan) !important;
+}
+
+@media (max-width: 768px) {
+    .cyber-header h1 { font-size: 1.8rem !important; }
+    .risk-score-circle { width: 140px; height: 140px; }
+    .risk-score-inner { width: 110px; height: 110px; }
+    .risk-score-value { font-size: 2rem; }
+}
+
+#MainMenu { visibility: hidden; }
+footer { visibility: hidden; }
+header { visibility: hidden; }
+
+[data-testid="stMetricValue"] {
+    font-family: 'Orbitron', monospace !important;
+    color: var(--accent-cyan) !important;
+}
+
+[data-testid="stMetricLabel"] {
+    font-family: 'Rajdhani', sans-serif !important;
+    color: var(--text-secondary) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+}
+</style>
+"""
+
+st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+
 
 # ── Helper Functions ──
 def extract_risk_score(report: str) -> int:
@@ -396,7 +732,7 @@ with st.sidebar:
     <div style="display: flex; flex-direction: column; gap: 0.5rem;">
         <div class="glass-card" style="padding: 0.6rem; text-align: center;">
             <span style="font-family: 'Orbitron', monospace; font-size: 0.7rem; color: #00f5d4;">
-                🧠 Groq LLM (LLaMA 3.1)
+                🧠 Groq LLM (LLaMA 3.3)
             </span>
         </div>
         <div class="glass-card" style="padding: 0.6rem; text-align: center;">
@@ -540,7 +876,7 @@ col_left, col_center, col_right = st.columns([1, 2, 1])
 with col_center:
     launch_audit = st.button("🚀  LAUNCH SECURITY AUDIT", use_container_width=True)
 
-# ── API Key Check ──
+# ── API Key Check & Audit Execution ──
 if launch_audit:
     if not GROQ_API_KEY:
         st.error("⚠️ **GROQ_API_KEY not found!** Please set it in your `.env` file or Streamlit secrets.")
@@ -744,7 +1080,7 @@ st.markdown("""
         <span class="tech-badge">Python</span>
         <span class="tech-badge">Streamlit</span>
         <span class="tech-badge">Groq</span>
-        <span class="tech-badge">LLaMA 3.1</span>
+        <span class="tech-badge">LLaMA 3.3</span>
         <span class="tech-badge">Multi-Agent</span>
     </div>
 </div>
