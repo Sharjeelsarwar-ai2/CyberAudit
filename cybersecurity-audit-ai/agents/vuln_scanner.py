@@ -1,4 +1,5 @@
 from utils.groq_client import call_agent
+from utils.text_utils import condense
 
 
 def run_vuln_scanner(app_description: str, threat_model: str) -> str:
@@ -28,9 +29,9 @@ Format as structured markdown with tables. Be specific to the described tech sta
 {app_description}
 
 --- THREAT MODEL CONTEXT ---
-{threat_model}
+{condense(threat_model, 5000)}
 --- END ---
 
 Provide your detailed vulnerability assessment."""
 
-    return call_agent(system_prompt, user_prompt, context=threat_model)
+    return call_agent(system_prompt, user_prompt)
