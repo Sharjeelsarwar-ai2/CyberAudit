@@ -4,6 +4,7 @@ import time
 from config.settings import get_groq_key_info, AGENT_CONFIG, SEVERITY_COLORS
 from agents.orchestrator import run_audit
 from utils.pdf_generator import generate_pdf
+from utils.groq_client import is_error
 
 # ── Page Config ──
 st.set_page_config(
@@ -394,73 +395,158 @@ CUSTOM_CSS = """
     padding-top: 1.5rem !important;
 }
 
-/* ── Tabs: equal-width grid, no duplicate underline ── */
-.stTabs [data-baseweb="tab-list"] {
+/* ── Tabs: animated, colour-coded navigation (ARIA selectors work on old + new Streamlit) ── */
+[data-testid="stTabs"], [data-baseweb="tabs"] { --c-rgb: 255, 234, 167; }
+[data-testid="stTabs"]:has([role="tab"]:nth-child(2)[aria-selected="true"]),
+[data-baseweb="tabs"]:has([role="tab"]:nth-child(2)[aria-selected="true"]) { --c-rgb: 255, 107, 107; }
+[data-testid="stTabs"]:has([role="tab"]:nth-child(3)[aria-selected="true"]),
+[data-baseweb="tabs"]:has([role="tab"]:nth-child(3)[aria-selected="true"]) { --c-rgb: 78, 205, 196; }
+[data-testid="stTabs"]:has([role="tab"]:nth-child(4)[aria-selected="true"]),
+[data-baseweb="tabs"]:has([role="tab"]:nth-child(4)[aria-selected="true"]) { --c-rgb: 69, 183, 209; }
+[data-testid="stTabs"]:has([role="tab"]:nth-child(5)[aria-selected="true"]),
+[data-baseweb="tabs"]:has([role="tab"]:nth-child(5)[aria-selected="true"]) { --c-rgb: 150, 206, 180; }
+
+[role="tablist"] {
     display: flex !important;
-    gap: 6px;
+    gap: 6px !important;
     width: 100%;
+    padding: 6px 6px 10px !important;
     overflow-x: auto;
-    background: rgba(17, 24, 39, 0.6);
+    scrollbar-width: none;
+    position: relative;
+    background: linear-gradient(145deg, rgba(17, 24, 39, 0.92), rgba(15, 23, 42, 0.65)) !important;
     border: 1px solid var(--glass-border);
     border-bottom: none;
-    border-radius: 12px 12px 0 0;
-    padding: 6px;
+    border-radius: 16px 16px 0 0;
+    box-shadow: none !important;
+    backdrop-filter: blur(12px);
+}
+[role="tablist"]::-webkit-scrollbar { display: none; }
+[data-baseweb="tab-border"] { display: none !important; }
+
+/* selection indicator: new Streamlit (react-aria) + old (baseweb) */
+.react-aria-SelectionIndicator,
+[data-baseweb="tab-highlight"] {
+    height: 3px !important;
+    border-radius: 3px !important;
+    background: rgb(var(--c-rgb)) !important;
+    box-shadow: 0 0 14px rgba(var(--c-rgb), 0.9);
+    transition: all 0.45s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-.stTabs [data-baseweb="tab-highlight"],
-.stTabs [data-baseweb="tab-border"] {
-    display: none !important;
-}
+[role="tab"]:nth-child(1) { --t-rgb: 255, 234, 167; }
+[role="tab"]:nth-child(2) { --t-rgb: 255, 107, 107; }
+[role="tab"]:nth-child(3) { --t-rgb: 78, 205, 196; }
+[role="tab"]:nth-child(4) { --t-rgb: 69, 183, 209; }
+[role="tab"]:nth-child(5) { --t-rgb: 150, 206, 180; }
 
-.stTabs [data-baseweb="tab"] {
+[role="tab"] {
     flex: 1 1 0;
     min-width: max-content;
     height: auto !important;
+    display: flex !important;
+    align-items: center;
     justify-content: center;
-    white-space: nowrap;
+    position: relative;
+    padding: 12px 18px !important;
+    border-radius: 12px !important;
     background: transparent !important;
-    border-radius: 10px !important;
     color: var(--text-secondary) !important;
+    cursor: pointer;
+    transition: color 0.3s ease, background 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease !important;
+}
+[role="tab"] p {
+    margin: 0 !important;
     font-family: 'Orbitron', monospace !important;
-    font-size: 0.7rem !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
     letter-spacing: 1px !important;
-    padding: 12px 14px !important;
-    transition: all 0.3s ease !important;
+    line-height: 1.2 !important;
+    white-space: nowrap;
+    color: inherit !important;
+}
+[role="tab"]:hover {
+    transform: translateY(-2px);
+    color: rgb(var(--t-rgb)) !important;
+    background: rgba(var(--t-rgb), 0.08) !important;
+}
+[role="tab"][aria-selected="true"] {
+    color: rgb(var(--t-rgb)) !important;
+    background: rgba(var(--t-rgb), 0.12) !important;
+    box-shadow: inset 0 0 0 1px rgba(var(--t-rgb), 0.35), 0 6px 20px rgba(var(--t-rgb), 0.12);
 }
 
-.stTabs [data-baseweb="tab"]:hover {
-    color: var(--accent-cyan) !important;
-    background: rgba(0, 245, 212, 0.05) !important;
-}
-
-.stTabs [aria-selected="true"] {
-    background: rgba(0, 245, 212, 0.1) !important;
-    color: var(--accent-cyan) !important;
-    box-shadow: inset 0 -2px 0 var(--accent-cyan);
-}
-
-.stTabs [data-baseweb="tab-panel"] {
+[role="tabpanel"] {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
-    border-top: none;
-    border-radius: 0 0 12px 12px;
+    border-top: 1px solid rgba(var(--c-rgb), 0.45);
+    border-radius: 0 0 16px 16px;
     padding: 1.5rem !important;
     margin-top: 0;
     overflow-x: auto;
     backdrop-filter: blur(10px);
+    animation: tabIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+[role="tabpanel"][hidden] { display: none !important; }
+@keyframes tabIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
-.stTabs [data-baseweb="tab-panel"] table {
-    width: 100%;
-    border-collapse: collapse;
-    display: block;
-    overflow-x: auto;
+[role="tabpanel"] [data-testid="stMarkdownContainer"] { overflow-x: auto; }
+[role="tabpanel"] table { width: 100%; border-collapse: collapse; }
+[role="tabpanel"] th {
+    background: rgba(var(--c-rgb), 0.12) !important;
+    color: rgb(var(--c-rgb)) !important;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-align: left;
 }
-.stTabs [data-baseweb="tab-panel"] th,
-.stTabs [data-baseweb="tab-panel"] td {
+[role="tabpanel"] th, [role="tabpanel"] td {
     border: 1px solid var(--glass-border);
-    padding: 8px 12px;
+    padding: 10px 14px;
     vertical-align: top;
+}
+[role="tabpanel"] tbody tr:nth-child(even) { background: rgba(255, 255, 255, 0.02); }
+[role="tabpanel"] tbody tr:hover { background: rgba(var(--c-rgb), 0.06); }
+
+/* ── Section header inside each tab ── */
+.section-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 18px; margin-bottom: 1.4rem;
+    border-radius: 14px;
+    border: 1px solid rgba(var(--accent), 0.28);
+    border-left: 4px solid rgb(var(--accent));
+    background: linear-gradient(90deg, rgba(var(--accent), 0.14), rgba(var(--accent), 0.02));
+}
+.section-icon {
+    width: 46px; height: 46px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; border-radius: 12px;
+    background: rgba(var(--accent), 0.15);
+    box-shadow: 0 0 18px rgba(var(--accent), 0.25);
+}
+.section-meta { flex: 1; min-width: 0; }
+.section-title {
+    font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase; color: rgb(var(--accent));
+}
+.section-sub { font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px; }
+.section-badge {
+    flex: none; white-space: nowrap;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+    padding: 5px 12px; border-radius: 20px;
+    color: rgb(var(--accent));
+    border: 1px solid rgba(var(--accent), 0.35);
+    background: rgba(var(--accent), 0.08);
+}
+.section-badge.fail { color: #ff4d6d; border-color: rgba(255, 77, 109, 0.5); background: rgba(255, 77, 109, 0.1); }
+
+@media (prefers-reduced-motion: reduce) {
+    [role="tabpanel"] { animation: none; }
+    [role="tab"], .react-aria-SelectionIndicator, [data-baseweb="tab-highlight"] { transition: none !important; }
 }
 
 /* ── Card grid: consistent heights, no text overflow ── */
@@ -666,9 +752,38 @@ section[data-testid="stSidebar"] .stMarkdown li {
     .risk-score-value { font-size: 2rem; }
 }
 
-#MainMenu { visibility: hidden; }
-footer { visibility: hidden; }
-header { visibility: hidden; }
+/* ── Hide Streamlit chrome, but keep the header so the sidebar arrow survives ── */
+#MainMenu, footer,
+[data-testid="stMainMenu"], [data-testid="stAppDeployButton"], [data-testid="stDecoration"] {
+    visibility: hidden;
+}
+header[data-testid="stHeader"] { background: transparent !important; }
+
+/* Sidebar open/close arrows: always visible, cyan, glowing */
+[data-testid="stExpandSidebarButton"],
+[data-testid="stSidebarCollapsedControl"] button,
+[data-testid="collapsedControl"] button {
+    background: rgba(17, 24, 39, 0.92) !important;
+    border: 1px solid rgba(0, 245, 212, 0.45) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--glow-cyan);
+    transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+}
+[data-testid="stExpandSidebarButton"]:hover,
+[data-testid="stSidebarCollapsedControl"] button:hover,
+[data-testid="collapsedControl"] button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 24px rgba(0, 245, 212, 0.55);
+}
+[data-testid="stExpandSidebarButton"],
+[data-testid="stExpandSidebarButton"] *,
+[data-testid="stSidebarCollapsedControl"] *,
+[data-testid="collapsedControl"] *,
+[data-testid="stSidebarCollapseButton"] * {
+    color: var(--accent-cyan) !important;
+    fill: var(--accent-cyan) !important;
+}
+[data-testid="stSidebarCollapseButton"] { opacity: 1 !important; visibility: visible !important; }
 
 [data-testid="stMetricValue"] {
     font-family: 'Orbitron', monospace !important;
@@ -688,6 +803,36 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 
 # ── Helper Functions ──
+def hex_to_rgb(color: str) -> str:
+    color = color.lstrip("#")
+    return ", ".join(str(int(color[i:i + 2], 16)) for i in (0, 2, 4))
+
+
+def render_section(agent_key: str, body, empty_msg: str):
+    """Header card + content for one result tab."""
+    cfg = AGENT_CONFIG[agent_key]
+    failed = bool(body) and is_error(body)
+    if failed:
+        badge = '<span class="section-badge fail">FAILED</span>'
+    elif body:
+        words = len(body.split())
+        badge = f'<span class="section-badge">{words:,} words · {max(1, round(words / 200))} min read</span>'
+    else:
+        badge = ""
+    st.markdown(
+        f'<div class="section-head" style="--accent: {hex_to_rgb(cfg["color"])};">'
+        f'<div class="section-icon">{cfg["icon"]}</div>'
+        f'<div class="section-meta"><div class="section-title">{cfg["role"]}</div>'
+        f'<div class="section-sub">{cfg["description"]}</div></div>{badge}</div>',
+        unsafe_allow_html=True,
+    )
+    if failed:
+        st.error(body)
+        st.caption("This agent hit an API limit. Wait a minute and run the audit again.")
+    else:
+        st.markdown(body or empty_msg)
+
+
 def extract_risk_score(report: str) -> int:
     patterns = [
         r'Overall Risk Score[:\s]*(\d+)\s*/\s*100',
@@ -701,7 +846,7 @@ def extract_risk_score(report: str) -> int:
             score = int(match.group(1))
             if 0 <= score <= 100:
                 return score
-    return 65
+    return None
 
 
 def extract_security_grade(report: str) -> str:
@@ -714,10 +859,12 @@ def extract_security_grade(report: str) -> str:
         match = re.search(pattern, report, re.IGNORECASE)
         if match:
             return match.group(1).upper()
-    return "B-"
+    return None
 
 
-def get_risk_level(score: int) -> tuple:
+def get_risk_level(score) -> tuple:
+    if score is None:
+        return "N/A", "#64748b", "low"
     if score >= 75:
         return "CRITICAL", SEVERITY_COLORS["CRITICAL"], "critical"
     elif score >= 50:
@@ -786,7 +933,7 @@ with st.sidebar:
     <div style="display: flex; flex-direction: column; gap: 0.5rem;">
         <div class="glass-card" style="padding: 0.6rem; text-align: center;">
             <span style="font-family: 'Orbitron', monospace; font-size: 0.7rem; color: #00f5d4;">
-                🧠 Groq LLM (LLaMA 3.3)
+                🧠 Groq LLM
             </span>
         </div>
         <div class="glass-card" style="padding: 0.6rem; text-align: center;">
@@ -967,17 +1114,26 @@ if launch_audit:
     # ── Run All Agents ──
     start_time = time.time()
     results = run_audit(app_description)
-    elapsed = time.time() - start_time
+    st.session_state["audit"] = {"results": results, "elapsed": time.time() - start_time}
+    st.rerun()
+
+
+audit = st.session_state.get("audit")
+if audit:
+    results = audit["results"]
+    elapsed = audit["elapsed"]
+    ok_count = sum(1 for v in results.values() if not is_error(v))
+    banner_title = "✅ AUDIT COMPLETE" if ok_count == len(results) else "⚠️ AUDIT FINISHED WITH ERRORS"
 
     # ── Success Banner ──
     st.markdown(f"""
     <div class="glass-card" style="text-align: center; border-color: rgba(0, 245, 212, 0.4);
                                     background: rgba(0, 245, 212, 0.03);">
         <h2 style="font-family: 'Orbitron', monospace; color: #00f5d4; margin: 0 0 0.5rem 0;">
-            ✅ AUDIT COMPLETE
+            {banner_title}
         </h2>
         <p style="color: #94a3b8; margin: 0;">
-            5 agents completed analysis in <strong style="color: #00f5d4;">{elapsed:.1f}s</strong>
+            {ok_count}/{len(results)} agents completed analysis in <strong style="color: #00f5d4;">{elapsed:.1f}s</strong>
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -988,6 +1144,10 @@ if launch_audit:
     risk_score = extract_risk_score(results.get('final_report', ''))
     security_grade = extract_security_grade(results.get('final_report', ''))
     risk_level, risk_color, risk_class = get_risk_level(risk_score)
+    risk_pct = risk_score if risk_score is not None else 0
+    grade_pct = 100 - risk_pct if risk_score is not None else 0
+    risk_score_txt = risk_score if risk_score is not None else "—"
+    security_grade = security_grade or "—"
     findings = count_findings(results)
 
     # ── Dashboard ──
@@ -1006,9 +1166,9 @@ if launch_audit:
     with score_col1:
         st.markdown(f"""
         <div class="risk-score-container">
-            <div class="risk-score-circle {risk_class}" style="--score-percent: {risk_score}%;">
+            <div class="risk-score-circle {risk_class}" style="--score-percent: {risk_pct}%;">
                 <div class="risk-score-inner">
-                    <div class="risk-score-value" style="color: {risk_color};">{risk_score}</div>
+                    <div class="risk-score-value" style="color: {risk_color};">{risk_score_txt}</div>
                     <div class="risk-score-label">RISK SCORE</div>
                 </div>
             </div>
@@ -1018,7 +1178,7 @@ if launch_audit:
     with score_col2:
         st.markdown(f"""
         <div class="risk-score-container">
-            <div class="risk-score-circle {risk_class}" style="--score-percent: {100 - risk_score}%;">
+            <div class="risk-score-circle {risk_class}" style="--score-percent: {grade_pct}%;">
                 <div class="risk-score-inner">
                     <div class="risk-score-value" style="color: {risk_color};">{security_grade}</div>
                     <div class="risk-score-label">SECURITY GRADE</div>
@@ -1030,7 +1190,7 @@ if launch_audit:
     with score_col3:
         st.markdown(f"""
         <div class="risk-score-container">
-            <div class="risk-score-circle {risk_class}" style="--score-percent: {risk_score}%;">
+            <div class="risk-score-circle {risk_class}" style="--score-percent: {risk_pct}%;">
                 <div class="risk-score-inner">
                     <div class="risk-score-value" style="color: {risk_color}; font-size: 1.4rem;">{risk_level}</div>
                     <div class="risk-score-label">RISK LEVEL</div>
@@ -1087,28 +1247,17 @@ if launch_audit:
     </div>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs([
-        "📊 Executive Report",
-        "🎯 Threat Model",
-        "🔍 Vulnerabilities",
-        "📋 Compliance",
-        "🚨 Incident Response"
-    ])
-
-    with tabs[0]:
-        st.markdown(results.get('final_report', 'No report generated.'))
-
-    with tabs[1]:
-        st.markdown(results.get('threat_model', 'No threat model generated.'))
-
-    with tabs[2]:
-        st.markdown(results.get('vuln_scan', 'No vulnerability scan generated.'))
-
-    with tabs[3]:
-        st.markdown(results.get('compliance', 'No compliance check generated.'))
-
-    with tabs[4]:
-        st.markdown(results.get('incident_response', 'No incident response plan generated.'))
+    TAB_META = [
+        ("📊 Executive Report", "final_report", "report_writer", "No report generated."),
+        ("🎯 Threat Model", "threat_model", "threat_modeler", "No threat model generated."),
+        ("🔍 Vulnerabilities", "vuln_scan", "vuln_scanner", "No vulnerability scan generated."),
+        ("📋 Compliance", "compliance", "compliance_officer", "No compliance check generated."),
+        ("🚨 Incident Response", "incident_response", "incident_responder", "No incident response plan generated."),
+    ]
+    tabs = st.tabs([meta[0] for meta in TAB_META])
+    for tab, (_label, result_key, agent_key, empty_msg) in zip(tabs, TAB_META):
+        with tab:
+            render_section(agent_key, results.get(result_key), empty_msg)
 
     st.markdown('<div class="cyber-divider"></div>', unsafe_allow_html=True)
 
@@ -1145,7 +1294,7 @@ st.markdown("""
         <span class="tech-badge">Python</span>
         <span class="tech-badge">Streamlit</span>
         <span class="tech-badge">Groq</span>
-        <span class="tech-badge">LLaMA 3.3</span>
+        <span class="tech-badge">Groq LLM</span>
         <span class="tech-badge">Multi-Agent</span>
     </div>
 </div>
