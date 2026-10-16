@@ -1,4 +1,5 @@
 from utils.groq_client import call_agent
+from utils.text_utils import condense
 
 
 def run_report_writer(app_description: str, all_findings: dict) -> str:
@@ -41,16 +42,16 @@ IMPORTANT: Include the exact text "Security Grade: [LETTER]" where LETTER is A+ 
 
     combined_context = f"""
 THREAT MODEL:
-{all_findings.get('threat_model', 'N/A')}
+{condense(all_findings.get('threat_model', 'N/A'), 2400)}
 
 VULNERABILITY SCAN:
-{all_findings.get('vuln_scan', 'N/A')}
+{condense(all_findings.get('vuln_scan', 'N/A'), 2400)}
 
 COMPLIANCE CHECK:
-{all_findings.get('compliance', 'N/A')}
+{condense(all_findings.get('compliance', 'N/A'), 2400)}
 
 INCIDENT RESPONSE PLAN:
-{all_findings.get('incident_response', 'N/A')}
+{condense(all_findings.get('incident_response', 'N/A'), 2400)}
 """
 
     user_prompt = f"""Compile the final security audit report for:
@@ -64,4 +65,4 @@ INCIDENT RESPONSE PLAN:
 
 Produce the comprehensive final report."""
 
-    return call_agent(system_prompt, user_prompt, context=combined_context)
+    return call_agent(system_prompt, user_prompt)
