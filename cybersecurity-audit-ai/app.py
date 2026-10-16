@@ -13,10 +13,289 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ── Load CSS ──
-with open("assets/style.css") as f:
-    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+# ── Load CSS (Embedded) ──
+CUSTOM_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
+:root {
+    --bg-primary: #0a0e17;
+    --bg-secondary: #111827;
+    --bg-card: rgba(17, 24, 39, 0.8);
+    --accent-cyan: #00f5d4;
+    --accent-green: #00c896;
+    --accent-purple: #7c3aed;
+    --accent-red: #ff0040;
+    --accent-orange: #ff6b35;
+    --accent-yellow: #ffd700;
+    --accent-blue: #4a90d9;
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --glow-cyan: 0 0 20px rgba(0, 245, 212, 0.3), 0 0 40px rgba(0, 245, 212, 0.1);
+    --glow-purple: 0 0 20px rgba(124, 58, 237, 0.3), 0 0 40px rgba(124, 58, 237, 0.1);
+    --glow-red: 0 0 20px rgba(255, 0, 64, 0.3);
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+.stApp {
+    background: var(--bg-primary) !important;
+    background-image:
+        radial-gradient(ellipse at 10% 20%, rgba(0, 245, 212, 0.03) 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 80%, rgba(124, 58, 237, 0.03) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0) 0%, var(--bg-primary) 100%) !important;
+    font-family: 'Rajdhani', sans-serif !important;
+}
+
+.stApp::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image:
+        linear-gradient(rgba(0, 245, 212, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 245, 212, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: gridMove 20s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+
+@keyframes gridMove {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(50px, 50px); }
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--accent-cyan), var(--accent-purple));
+    border-radius: 3px;
+}
+
+.cyber-header {
+    text-align: center;
+    padding: 2rem 0;
+    position: relative;
+    z-index: 1;
+}
+
+.cyber-header h1 {
+    font-family: 'Orbitron', monospace !important;
+    font-size: 3rem !important;
+    font-weight: 900 !important;
+    background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-green) 50%, var(--accent-purple) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 3px;
+    animation: titleGlow 3s ease-in-out infinite alternate;
+    margin-bottom: 0.3rem !important;
+}
+
+@keyframes titleGlow {
+    0% { filter: drop-shadow(0 0 10px rgba(0, 245, 212, 0.3)); }
+    100% { filter: drop-shadow(0 0 25px rgba(124, 58, 237, 0.4)); }
+}
+
+.cyber-header .subtitle {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    font-weight: 300;
+}
+
+.shield-container { text-align: center; margin: 1rem 0; }
+
+.shield-icon {
+    font-size: 5rem;
+    animation: shieldPulse 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 30px rgba(0, 245, 212, 0.4));
+}
+
+@keyframes shieldPulse {
+    0%, 100% { transform: scale(1) rotateY(0deg); }
+    25% { transform: scale(1.05) rotateY(5deg); }
+    50% { transform: scale(1.1) rotateY(0deg); }
+    75% { transform: scale(1.05) rotateY(-5deg); }
+}
+
+.glass-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+    transition: left 0.6s ease;
+}
+
+.glass-card:hover::before { left: 100%; }
+
+.glass-card:hover {
+    transform: translateY(-5px) scale(1.01);
+    border-color: rgba(0, 245, 212, 0.3);
+    box-shadow: var(--glow-cyan);
+}
+
+.agent-card {
+    background: linear-gradient(145deg, rgba(17, 24, 39, 0.9), rgba(30, 41, 59, 0.6));
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 1.8rem;
+    text-align: center;
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+    cursor: default;
+}
+
+.agent-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+    transform: scaleX(0);
+    transition: transform 0.4s ease;
+}
+
+.agent-card:hover::after { transform: scaleX(1); }
+
+.agent-card:hover {
+    transform: translateY(-10px) rotateX(5deg);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), var(--glow-cyan);
+    border-color: var(--accent-cyan);
+}
+
+.agent-card .agent-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    display: block;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+}
+
+.agent-card .agent-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    margin-bottom: 0.4rem;
+    letter-spacing: 1px;
+}
+
+.agent-card .agent-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.stTextArea textarea {
+    background: rgba(17, 24, 39, 0.8) !important;
+    border: 1px solid rgba(0, 245, 212, 0.2) !important;
+    border-radius: 12px !important;
+    color: var(--text-primary) !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.9rem !important;
+    padding: 1rem !important;
+    transition: all 0.3s ease !important;
+}
+
+.stTextArea textarea:focus {
+    border-color: var(--accent-cyan) !important;
+    box-shadow: 0 0 0 2px rgba(0, 245, 212, 0.1), var(--glow-cyan) !important;
+}
+
+.stTextArea textarea::placeholder {
+    color: rgba(148, 163, 184, 0.5) !important;
+}
+
+.stButton > button {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green)) !important;
+    color: #0a0e17 !important;
+    font-family: 'Orbitron', monospace !important;
+    font-weight: 700 !important;
+    font-size: 1rem !important;
+    letter-spacing: 2px !important;
+    padding: 0.8rem 2.5rem !important;
+    border: none !important;
+    border-radius: 12px !important;
+    cursor: pointer !important;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    text-transform: uppercase !important;
+    width: 100% !important;
+}
+
+.stButton > button:hover {
+    transform: translateY(-3px) scale(1.02) !important;
+    box-shadow: 0 10px 30px rgba(0, 245, 212, 0.3), var(--glow-cyan) !important;
+}
+
+.stButton > button:active {
+    transform: translateY(-1px) scale(0.99) !important;
+}
+
+.severity-critical {
+    background: linear-gradient(135deg, #ff0040, #ff1a5e);
+    color: white; padding: 4px 14px; border-radius: 20px;
+    font-family: 'Orbitron', monospace; font-size: 0.7rem;
+    font-weight: 700; letter-spacing: 1px; display: inline-block;
+    animation: criticalPulse 1.5s ease-in-out infinite;
+    box-shadow: 0 0 15px rgba(255, 0, 64, 0.4);
+}
+
+@keyframes criticalPulse {
+    0%, 100% { box-shadow: 0 0 15px rgba(255, 0, 64, 0.4); }
+    50% { box-shadow: 0 0 25px rgba(255, 0, 64, 0.7); }
+}
+
+.severity-high {
+    background: linear-gradient(135deg, #ff6b35, #ff8c5a);
+    color: white; padding: 4px 14px; border-radius: 20px;
+    font-family: 'Orbitron', monospace; font-size: 0.7rem;
+    font-weight: 700; letter-spacing: 1px; display: inline-block;
+}
+
+.severity-medium {
+    background: linear-gradient(135deg, #ffd700, #ffed4a);
+    color: #1a1a2e; padding: 4px 14px; border-radius: 20px;
+    font-family: 'Orbitron', monospace; font-size: 0.7rem;
+    font-weight: 700; letter-spacing: 1px; display: inline-block;
+}
+
+.severity-low {
+    background: linear-gradient(135deg, #00d4aa, #00f5d4);
+    color: #1a1a2e; padding: 4px 14px; border-radius: 20px;
+    font-family: 'Orbitron', monospace; font-size: 0.7rem;
+    font-weight: 700; letter-spacing: 1px; display: inline-block;
+}
+
+.risk-score-container {
+    display: flex; justify-content: center;
+    align-items: center; margin: 2rem 0;
+}
+
+.risk-score-circle {
+    width: 180px; height: 180px; border-radius: 50%;
+    display: flex; flex-direction: 
 
 # ── Helper Functions ──
 def extract_risk_score(report: str) -> int:
