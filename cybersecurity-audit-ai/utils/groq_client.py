@@ -1,11 +1,12 @@
 from groq import Groq
-from config.settings import GROQ_API_KEY, MODEL_NAME, MAX_TOKENS, TEMPERATURE
+from config.settings import get_groq_key_info, MODEL_NAME, MAX_TOKENS, TEMPERATURE
 
 
 def get_groq_client():
-    if not GROQ_API_KEY:
+    api_key, _ = get_groq_key_info()  # resolved at call time, not import time
+    if not api_key:
         raise ValueError("GROQ_API_KEY is not set. Please add it to Streamlit secrets or .env file.")
-    return Groq(api_key=GROQ_API_KEY)
+    return Groq(api_key=api_key)
 
 
 def call_agent(system_prompt: str, user_prompt: str, context: str = "") -> str:
@@ -33,4 +34,9 @@ def call_agent(system_prompt: str, user_prompt: str, context: str = "") -> str:
         return response.choices[0].message.content
 
     except Exception as e:
-        return f"❌ **Agent Error:** {str(e)}\n\nPlease check your API key and try again."
+        hint = ""
+        if "401" in str(e) or "invalid_api_key" in str(e).lower():
+            _, source = get_groq_key_info()
+            hint = (f"\n\nThe key was loaded from **{source}** but Groq rejected it. "
+                    "Check the sidebar's 🔑 API key status panel.")
+        return f"❌ **Agent Error:** {str(e)}{hint}\n\nPlease check your API key and try again."
