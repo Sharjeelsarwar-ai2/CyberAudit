@@ -1,7 +1,7 @@
 import streamlit as st
 import re
 import time
-from config.settings import GROQ_API_KEY, AGENT_CONFIG, SEVERITY_COLORS
+from config.settings import get_groq_key_info, AGENT_CONFIG, SEVERITY_COLORS
 from agents.orchestrator import run_audit
 from utils.pdf_generator import generate_pdf
 
@@ -388,20 +388,43 @@ CUSTOM_CSS = """
     text-transform: uppercase; letter-spacing: 2px;
 }
 
+/* ── Page grid ── */
+.block-container {
+    max-width: 1280px !important;
+    padding-top: 1.5rem !important;
+}
+
+/* ── Tabs: equal-width grid, no duplicate underline ── */
 .stTabs [data-baseweb="tab-list"] {
-    gap: 4px;
-    background: rgba(17, 24, 39, 0.5);
-    border-radius: 12px; padding: 4px;
+    display: flex !important;
+    gap: 6px;
+    width: 100%;
+    overflow-x: auto;
+    background: rgba(17, 24, 39, 0.6);
+    border: 1px solid var(--glass-border);
+    border-bottom: none;
+    border-radius: 12px 12px 0 0;
+    padding: 6px;
+}
+
+.stTabs [data-baseweb="tab-highlight"],
+.stTabs [data-baseweb="tab-border"] {
+    display: none !important;
 }
 
 .stTabs [data-baseweb="tab"] {
+    flex: 1 1 0;
+    min-width: max-content;
+    height: auto !important;
+    justify-content: center;
+    white-space: nowrap;
     background: transparent !important;
     border-radius: 10px !important;
     color: var(--text-secondary) !important;
     font-family: 'Orbitron', monospace !important;
     font-size: 0.7rem !important;
     letter-spacing: 1px !important;
-    padding: 8px 16px !important;
+    padding: 12px 14px !important;
     transition: all 0.3s ease !important;
 }
 
@@ -413,16 +436,47 @@ CUSTOM_CSS = """
 .stTabs [aria-selected="true"] {
     background: rgba(0, 245, 212, 0.1) !important;
     color: var(--accent-cyan) !important;
-    border-bottom: 2px solid var(--accent-cyan) !important;
+    box-shadow: inset 0 -2px 0 var(--accent-cyan);
 }
 
 .stTabs [data-baseweb="tab-panel"] {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
+    border-top: none;
     border-radius: 0 0 12px 12px;
-    padding: 1.5rem;
+    padding: 1.5rem !important;
+    margin-top: 0;
+    overflow-x: auto;
     backdrop-filter: blur(10px);
 }
+
+.stTabs [data-baseweb="tab-panel"] table {
+    width: 100%;
+    border-collapse: collapse;
+    display: block;
+    overflow-x: auto;
+}
+.stTabs [data-baseweb="tab-panel"] th,
+.stTabs [data-baseweb="tab-panel"] td {
+    border: 1px solid var(--glass-border);
+    padding: 8px 12px;
+    vertical-align: top;
+}
+
+/* ── Card grid: consistent heights, no text overflow ── */
+.agent-card {
+    min-height: 200px;
+    padding: 1.4rem 1rem !important;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-start;
+}
+.agent-card .agent-name {
+    font-size: 0.75rem !important;
+    letter-spacing: 0.5px !important;
+    overflow-wrap: anywhere;
+}
+.example-card { min-height: 120px; }
+.risk-score-container { margin: 1rem 0 !important; }
 
 .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
     font-family: 'Orbitron', monospace !important;
@@ -748,6 +802,16 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
+    with st.expander("🔑 API key status"):
+        _k, _src = get_groq_key_info()
+        if not _k:
+            st.error("No GROQ_API_KEY found in secrets or environment.")
+        else:
+            st.write(f"**Source:** {_src}")
+            st.write(f"**Loaded:** `{_k[:4]}…{_k[-4:]}` ({len(_k)} chars)")
+            if not _k.startswith("gsk_"):
+                st.warning("Groq keys start with `gsk_`. This looks like a different provider's key.")
+
     st.markdown('<div class="cyber-divider"></div>', unsafe_allow_html=True)
     st.markdown("""
     <div style="text-align: center; padding: 0.5rem;">
@@ -878,9 +942,10 @@ with col_center:
 
 # ── API Key Check & Audit Execution ──
 if launch_audit:
-    if not GROQ_API_KEY:
+    groq_key, _key_source = get_groq_key_info()
+    if not groq_key:
         st.error("⚠️ **GROQ_API_KEY not found!** Please set it in your `.env` file or Streamlit secrets.")
-        st.code("GROQ_API_KEY=your_api_key_here", language="bash")
+        st.code('GROQ_API_KEY = "gsk_your_key_here"', language="toml")
         st.stop()
 
     if not app_description or len(app_description.strip()) < 20:
@@ -967,7 +1032,7 @@ if launch_audit:
         <div class="risk-score-container">
             <div class="risk-score-circle {risk_class}" style="--score-percent: {risk_score}%;">
                 <div class="risk-score-inner">
-                    <div class="risk-score-value" style="color: {risk_color};">{risk_level}</div>
+                    <div class="risk-score-value" style="color: {risk_color}; font-size: 1.4rem;">{risk_level}</div>
                     <div class="risk-score-label">RISK LEVEL</div>
                 </div>
             </div>
