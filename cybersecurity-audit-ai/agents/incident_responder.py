@@ -1,4 +1,5 @@
 from utils.groq_client import call_agent
+from utils.text_utils import condense
 
 
 def run_incident_response(app_description: str, previous_findings: str) -> str:
@@ -42,9 +43,9 @@ Be specific and actionable. Format clearly in markdown."""
 {app_description}
 
 --- SECURITY FINDINGS CONTEXT ---
-{previous_findings}
+{condense(previous_findings, 5000)}
 --- END ---
 
 Provide your detailed incident response plan."""
 
-    return call_agent(system_prompt, user_prompt, context=previous_findings)
+    return call_agent(system_prompt, user_prompt)
