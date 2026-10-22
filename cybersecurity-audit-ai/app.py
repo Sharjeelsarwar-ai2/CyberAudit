@@ -5,6 +5,7 @@ from config.settings import get_groq_key_info, AGENT_CONFIG, SEVERITY_COLORS
 from agents.orchestrator import run_audit
 from utils.pdf_generator import generate_pdf
 from utils.groq_client import is_error
+from utils.robot_ui import robot_markup
 
 # ── Page Config ──
 st.set_page_config(
@@ -346,21 +347,79 @@ CUSTOM_CSS = """
     display: flex; align-items: center; gap: 12px;
     padding: 1rem 1.5rem;
     background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    border: 1px solid color-mix(in srgb, var(--agent-color) 35%, transparent);
+    border-left: 4px solid var(--agent-color);
     border-radius: 12px; margin: 0.5rem 0;
     font-family: 'Rajdhani', sans-serif;
     font-size: 1.1rem; color: var(--text-primary);
     backdrop-filter: blur(10px);
+    box-shadow: 0 0 22px color-mix(in srgb, var(--agent-color) 12%, transparent);
 }
-
-.pulse-dot {
-    width: 12px; height: 12px; border-radius: 50%;
-    animation: pulse 1.5s ease-in-out infinite;
+.agent-running-copy { display: flex; flex-direction: column; gap: 2px; }
+.agent-running-copy strong {
+    color: var(--agent-color); font-family: 'Orbitron', monospace;
+    font-size: 0.78rem; letter-spacing: 0.5px;
 }
-
-@keyframes pulse {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.5); opacity: 0.5; }
+.agent-running-copy span { color: var(--text-primary); }
+.agent-robot {
+    position: relative; width: 48px; height: 48px; flex: 0 0 48px;
+    color: var(--robot-color); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--robot-color) 45%, transparent));
+}
+.robot-antenna {
+    position: absolute; z-index: 2; top: 0; left: 23px; width: 2px; height: 8px;
+    background: var(--robot-color); border-radius: 2px;
+}
+.robot-antenna::before {
+    content: ''; position: absolute; width: 6px; height: 6px; left: -2px; top: -3px;
+    border-radius: 50%; background: var(--robot-color); box-shadow: 0 0 8px var(--robot-color);
+}
+.robot-head {
+    position: absolute; z-index: 1; top: 7px; left: 7px; width: 34px; height: 23px;
+    box-sizing: border-box; border: 2px solid var(--robot-color); border-radius: 8px;
+    background: #111827; box-shadow: inset 0 0 8px color-mix(in srgb, var(--robot-color) 25%, transparent);
+}
+.robot-eye {
+    position: absolute; top: 6px; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--robot-color); box-shadow: 0 0 6px var(--robot-color);
+}
+.robot-eye.left { left: 6px; }
+.robot-eye.right { right: 6px; }
+.robot-mouth {
+    position: absolute; left: 11px; bottom: 3px; width: 8px; height: 2px;
+    border-radius: 2px; background: var(--robot-color); opacity: 0.8;
+}
+.robot-neck { position: absolute; top: 29px; left: 21px; width: 6px; height: 4px; background: var(--robot-color); }
+.robot-body {
+    position: absolute; bottom: 1px; left: 13px; width: 22px; height: 15px;
+    border: 2px solid var(--robot-color); border-radius: 7px 7px 5px 5px;
+    box-sizing: border-box; background: #111827;
+}
+.robot-core { position: absolute; width: 6px; height: 6px; top: 3px; left: 6px; border-radius: 2px; background: var(--robot-color); }
+.robot-arm {
+    position: absolute; top: 33px; width: 6px; height: 12px; border: 2px solid var(--robot-color);
+    border-radius: 5px; box-sizing: border-box; background: #111827;
+}
+.robot-arm.left { left: 5px; transform: rotate(14deg); }
+.robot-arm.right { right: 5px; transform: rotate(-14deg); }
+.robot-threat_modeler .robot-head { border-radius: 11px 11px 6px 6px; }
+.robot-vuln_scanner .robot-head { border-radius: 5px; }
+.robot-compliance_officer .robot-head { border-radius: 3px; }
+.robot-incident_responder .robot-antenna { height: 5px; }
+.robot-incident_responder .robot-antenna::before { width: 8px; height: 5px; left: -3px; border-radius: 5px 5px 2px 2px; }
+.robot-report_writer .robot-head { border-radius: 12px 12px 5px 5px; }
+.agent-robot.is-running { animation: robot-work 0.75s ease-in-out infinite alternate; }
+.agent-robot.is-running .robot-eye { animation: robot-blink 2.2s steps(1) infinite; }
+.agent-robot.is-running .robot-arm.left { animation: robot-arm-left 0.45s ease-in-out infinite alternate; }
+.agent-robot.is-running .robot-arm.right { animation: robot-arm-right 0.45s ease-in-out infinite alternate; }
+.team-agent-row .agent-robot { transform: scale(0.76); transform-origin: left center; margin-right: -8px; }
+.agent-card .agent-robot { margin: 0 auto 0.6rem; }
+@keyframes robot-work { from { transform: translateY(0); } to { transform: translateY(-4px); } }
+@keyframes robot-blink { 0%, 92%, 100% { transform: scaleY(1); } 94% { transform: scaleY(0.15); } }
+@keyframes robot-arm-left { from { transform: rotate(14deg); } to { transform: rotate(-18deg); } }
+@keyframes robot-arm-right { from { transform: rotate(-14deg); } to { transform: rotate(18deg); } }
+@media (prefers-reduced-motion: reduce) {
+    .agent-robot.is-running, .agent-robot.is-running .robot-eye,
+    .agent-robot.is-running .robot-arm { animation: none !important; }
 }
 
 .stat-card {
@@ -909,10 +968,10 @@ with st.sidebar:
 
     for key, agent in AGENT_CONFIG.items():
         st.markdown(f"""
-        <div class="glass-card" style="padding: 0.8rem; margin-bottom: 0.5rem; 
+        <div class="glass-card team-agent-row" style="padding: 0.8rem; margin-bottom: 0.5rem;
                                         border-left: 3px solid {agent['color']};">
             <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 1.3rem;">{agent['icon']}</span>
+                {robot_markup(key)}
                 <div>
                     <div style="font-family: 'Orbitron', monospace; font-size: 0.65rem; 
                                 color: {agent['color']}; font-weight: 700;">
@@ -998,8 +1057,8 @@ cols = st.columns(5)
 for i, (key, agent) in enumerate(AGENT_CONFIG.items()):
     with cols[i]:
         st.markdown(f"""
-        <div class="agent-card">
-            <span class="agent-icon">{agent['icon']}</span>
+        <div class="agent-card" style="--agent-color: {agent['color']};">
+            {robot_markup(key)}
             <div class="agent-name">{agent['role'].split(' ')[0].upper()}</div>
             <div class="agent-desc">{agent['description']}</div>
         </div>
