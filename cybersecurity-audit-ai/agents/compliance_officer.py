@@ -36,7 +36,7 @@ Format with clear sections and use tables."""
 {app_description}
 
 --- PREVIOUS SECURITY FINDINGS ---
-{condense(previous_findings, 5000)}
+{condense(previous_findings, 1700)}
 --- END ---
 
 Provide your detailed compliance report."""
