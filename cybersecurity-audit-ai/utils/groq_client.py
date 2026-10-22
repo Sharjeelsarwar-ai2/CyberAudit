@@ -1,3 +1,4 @@
+import math
 import re
 import threading
 import time
@@ -12,12 +13,12 @@ _WINDOW = 60.0       # Groq enforces tokens-per-minute on a rolling 60s window
 _SAFETY = 300        # tokens of headroom under the limit
 _usage = deque()     # [timestamp, tokens] entries, shared by every session in this process
 _lock = threading.Lock()
-_wait_hook = None    # optional callback(seconds_left) so the UI can show a countdown
+_wait_hook = threading.local()  # Streamlit callbacks must stay on their owning thread
 
 
 def set_wait_hook(fn):
-    global _wait_hook
-    _wait_hook = fn
+    """Set an optional countdown callback for the current thread only."""
+    _wait_hook.fn = fn
 
 
 def is_error(text) -> bool:
@@ -63,10 +64,16 @@ def _retry_after(msg: str):
 
 
 def _countdown(seconds: float):
-    for remaining in range(int(seconds) + 1, 0, -1):
-        if _wait_hook:
-            _wait_hook(remaining)
-        time.sleep(1)
+    seconds = max(0.0, float(seconds))
+    if seconds == 0:
+        return
+    hook = getattr(_wait_hook, "fn", None)
+    whole_seconds = math.ceil(seconds)
+    for remaining in range(whole_seconds, 0, -1):
+        if hook:
+            hook(remaining)
+        elapsed = whole_seconds - remaining
+        time.sleep(min(1.0, seconds - elapsed))
 
 
 def _reserve_budget(requested: int):
@@ -84,6 +91,12 @@ def _reserve_budget(requested: int):
                 return entry
             wait = _usage[0][0] + _WINDOW - now
         _countdown(max(wait, 0))
+
+
+def _update_reservation(entry, tokens: int):
+    """Correct/release a reservation without racing other request threads."""
+    with _lock:
+        entry[1] = max(0, int(tokens))
 
 
 def call_agent(system_prompt: str, user_prompt: str, context: str = "", max_tokens: int = None) -> str:
@@ -120,7 +133,7 @@ def call_agent(system_prompt: str, user_prompt: str, context: str = "", max_toke
                     temperature=TEMPERATURE,
                 )
             except Exception as e:
-                entry[1] = 0  # failed request: release the reservation
+                _update_reservation(entry, 0)  # failed request: release the reservation
                 msg = str(e)
                 retryable = "429" in msg or "413" in msg or "rate_limit" in msg.lower()
                 if not retryable or attempt == 3:
@@ -136,7 +149,7 @@ def call_agent(system_prompt: str, user_prompt: str, context: str = "", max_toke
                 continue
 
             usage = getattr(response, "usage", None)
-            entry[1] = getattr(usage, "total_tokens", None) or (prompt_tokens + out)
+            _update_reservation(entry, getattr(usage, "total_tokens", None) or (prompt_tokens + out))
             return response.choices[0].message.content
 
     except Exception as e:
