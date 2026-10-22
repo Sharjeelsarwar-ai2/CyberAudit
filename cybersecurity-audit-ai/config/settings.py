@@ -59,7 +59,7 @@ try:
 except ValueError:
     TPM_LIMIT = _DEFAULT_TPM
 
-MAX_TOKENS = 1200  # keeps normal audits within the free-tier TPM window more often
+MAX_TOKENS = 900  # concise agent outputs reduce generation time and TPM pressure
 TEMPERATURE = 0.3
 
 AGENT_CONFIG = {
