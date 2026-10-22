@@ -42,16 +42,16 @@ IMPORTANT: Include the exact text "Security Grade: [LETTER]" where LETTER is A+ 
 
     combined_context = f"""
 THREAT MODEL:
-{condense(all_findings.get('threat_model', 'N/A'), 2400)}
+{condense(all_findings.get('threat_model', 'N/A'), 800)}
 
 VULNERABILITY SCAN:
-{condense(all_findings.get('vuln_scan', 'N/A'), 2400)}
+{condense(all_findings.get('vuln_scan', 'N/A'), 800)}
 
 COMPLIANCE CHECK:
-{condense(all_findings.get('compliance', 'N/A'), 2400)}
+{condense(all_findings.get('compliance', 'N/A'), 800)}
 
 INCIDENT RESPONSE PLAN:
-{condense(all_findings.get('incident_response', 'N/A'), 2400)}
+{condense(all_findings.get('incident_response', 'N/A'), 800)}
 """
 
     user_prompt = f"""Compile the final security audit report for:
