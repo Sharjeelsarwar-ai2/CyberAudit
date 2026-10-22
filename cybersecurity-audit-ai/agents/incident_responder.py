@@ -43,7 +43,7 @@ Be specific and actionable. Format clearly in markdown."""
 {app_description}
 
 --- SECURITY FINDINGS CONTEXT ---
-{condense(previous_findings, 5000)}
+{condense(previous_findings, 1700)}
 --- END ---
 
 Provide your detailed incident response plan."""
