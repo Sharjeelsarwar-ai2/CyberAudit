@@ -29,7 +29,7 @@ Format as structured markdown with tables. Be specific to the described tech sta
 {app_description}
 
 --- THREAT MODEL CONTEXT ---
-{condense(threat_model, 5000)}
+{condense(threat_model, 1400)}
 --- END ---
 
 Provide your detailed vulnerability assessment."""
