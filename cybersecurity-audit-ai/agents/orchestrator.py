@@ -1,4 +1,6 @@
 import streamlit as st
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from agents.threat_modeler import run_threat_modeler
 from agents.vuln_scanner import run_vuln_scanner
 from agents.compliance_officer import run_compliance_check
@@ -38,29 +40,58 @@ def run_audit(app_description: str) -> dict:
         return {k: (v if not is_error(v) else "N/A (this agent failed)")
                 for k, v in results.items() if k != "final_report"}
 
-    steps = [
-        ("threat_model", "threat_modeler", "is analyzing threat landscape...",
-         lambda: run_threat_modeler(app_description)),
-        ("vuln_scan", "vuln_scanner", "is scanning for vulnerabilities...",
-         lambda: run_vuln_scanner(app_description, good("threat_model"))),
-        ("compliance", "compliance_officer", "is checking compliance frameworks...",
-         lambda: run_compliance_check(app_description, good("threat_model", "vuln_scan"))),
-        ("incident_response", "incident_responder", "is building incident response plan...",
-         lambda: run_incident_response(app_description, good("threat_model", "vuln_scan", "compliance"))),
-        ("final_report", "report_writer", "is compiling final report...",
-         lambda: run_report_writer(app_description, for_report())),
-    ]
-
-    fatal = False
     try:
-        for i, (result_key, agent_key, message, runner) in enumerate(steps, start=1):
-            if fatal:
-                results[result_key] = f"{ERROR_PREFIX} skipped because the API key was rejected."
+        # The threat model feeds both first-stage reviews. Those two analyses are
+        # independent of one another, so they can safely share a parallel stage.
+        show("threat_modeler", "is analyzing threat landscape...")
+        results["threat_model"] = run_threat_modeler(app_description)
+        progress_bar.progress(1 / 5)
+
+        if not is_fatal(results["threat_model"]):
+            parallel_steps = {
+                "vuln_scan": ("vuln_scanner", "is scanning for vulnerabilities...",
+                              lambda: run_vuln_scanner(app_description, good("threat_model"))),
+                "compliance": ("compliance_officer", "is checking compliance frameworks...",
+                               lambda: run_compliance_check(app_description, good("threat_model"))),
+            }
+            show("vuln_scanner", "and Compliance Officer are running concurrently...")
+            with ThreadPoolExecutor(max_workers=2, thread_name_prefix="cyber-audit") as pool:
+                futures = {
+                    pool.submit(runner): (result_key, agent_key)
+                    for result_key, (agent_key, _, runner) in parallel_steps.items()
+                }
+                completed = 1
+                for future in as_completed(futures):
+                    result_key, agent_key = futures[future]
+                    try:
+                        results[result_key] = future.result()
+                    except Exception as exc:
+                        results[result_key] = f"{ERROR_PREFIX} {exc}"
+                    completed += 1
+                    progress_bar.progress(completed / 5)
+                    if completed < 3:
+                        show(agent_key, "completed; the other parallel review is still running...")
+
+        fatal = any(is_fatal(value) for value in results.values())
+        if fatal:
+            results.setdefault("vuln_scan", f"{ERROR_PREFIX} skipped because the API key was rejected.")
+            results.setdefault("compliance", f"{ERROR_PREFIX} skipped because the API key was rejected.")
+            results["incident_response"] = f"{ERROR_PREFIX} skipped because the API key was rejected."
+            results["final_report"] = f"{ERROR_PREFIX} skipped because the API key was rejected."
+            progress_bar.progress(1.0)
+        else:
+            show("incident_responder", "is building incident response plan...")
+            results["incident_response"] = run_incident_response(
+                app_description, good("threat_model", "vuln_scan", "compliance")
+            )
+            progress_bar.progress(4 / 5)
+
+            if is_fatal(results["incident_response"]):
+                results["final_report"] = f"{ERROR_PREFIX} skipped because the API key was rejected."
             else:
-                show(agent_key, message)
-                results[result_key] = runner()
-                fatal = is_fatal(results[result_key])
-            progress_bar.progress(i / len(steps))
+                show("report_writer", "is compiling final report...")
+                results["final_report"] = run_report_writer(app_description, for_report())
+            progress_bar.progress(1.0)
     finally:
         set_wait_hook(None)
 
